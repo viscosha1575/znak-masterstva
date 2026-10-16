@@ -6,7 +6,7 @@ The site and the admin panel are in Russian; the documentation is in English.
 
 [![A walkthrough of the site on desktop and on a phone](docs/preview.webp)](docs/demo.mp4)
 
-A 30-second excerpt; the [full walkthrough](docs/demo.mp4) (3.5 min, MP4) goes through the home
+A 28-second excerpt; the [full walkthrough](docs/demo.mp4) (3.5 min, MP4) goes through the home
 page, the contest and rating pages, the application form, and then the same site on a phone.
 
 The repository holds two apps; each is built into its own Docker image and runs as a separate
