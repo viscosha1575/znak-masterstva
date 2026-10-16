@@ -1,0 +1,376 @@
+@import "tailwindcss";
+
+/* The dark theme is a choice, not the system's: see ThemeToggle. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Colours as roles. Every one has a light and a dark value below; components
+ * name the role and never a hex, so both themes come for free.
+ */
+:root {
+  --page: #f4f7fe;
+  --card: #ffffff;
+  /* Panels inside a card, neutral pills, quiet buttons. */
+  --subtle: #f4f7fe;
+  --subtle-hover: #e9edf7;
+  /* Field borders; the fainter one rules table rows. */
+  --line: #e0e5f2;
+  --rule: #e9edf7;
+
+  --ink: #1b254b;
+  --text: #1b2559;
+  --soft: #707eae;
+  --mute: #a3aed0;
+  --nav: #8f9bba;
+  --nav-active: #2d3748;
+
+  --brand: #422afb;
+  --brand-hover: #3311db;
+  --brand-soft: #f2efff;
+  /* Brand-coloured text and icons: the brand itself is too dim on navy. */
+  --accent: #422afb;
+
+  --ok: #01b574;
+  --ok-soft: #e6faf5;
+  --ok-ink: #22543d;
+  --danger: #ee5d50;
+  --danger-soft: #feefee;
+  --danger-ink: #c81e1e;
+  --warn: #ffb547;
+  --warn-soft: #fff6da;
+  --warn-ink: #7b341e;
+  --info: #3965ff;
+  --info-soft: #dbe9ff;
+  --info-ink: #2a4365;
+  --violet-soft: #e9d8fd;
+  --violet-ink: #44337a;
+
+  /* Toolbar controls float on the page and stay light in both themes. */
+  --float: #ffffff;
+  --float-hover: #f4f7fe;
+  --float-ink: #1b254b;
+
+  --shadow-card: 14px 17px 40px 4px rgb(112 144 176 / 0.08);
+  --shadow-control: 0 16px 36px rgb(112 144 176 / 0.12);
+  --shadow-float: 14px 17px 40px 4px rgb(112 144 176 / 0.18);
+  --shadow-brand: 0 12px 24px rgb(66 42 251 / 0.18);
+  --veil: rgb(15 23 42 / 0.38);
+  --chart: rgb(15 23 42 / 0.92);
+  --bar: rgb(244 247 254 / 0.72);
+  --bar-line: rgb(255 255 255 / 0.72);
+}
+
+[data-theme="dark"] {
+  --page: #0b1437;
+  --card: #111c44;
+  --subtle: rgb(255 255 255 / 0.05);
+  --subtle-hover: rgb(255 255 255 / 0.09);
+  --line: rgb(255 255 255 / 0.12);
+  --rule: rgb(255 255 255 / 0.08);
+
+  --ink: #ffffff;
+  --text: #ffffff;
+  --soft: #e1e9f8;
+  --mute: #a3aed0;
+  --nav: #ffffff;
+  --nav-active: #ffffff;
+
+  --brand: #7551ff;
+  --brand-hover: #8468ff;
+  --brand-soft: rgb(255 255 255 / 0.1);
+  --accent: #ffffff;
+
+  --ok-soft: rgb(154 230 180 / 0.16);
+  --ok-ink: #9ae6b4;
+  --danger-soft: rgb(254 178 178 / 0.16);
+  --danger-ink: #feb2b2;
+  --warn-soft: rgb(251 211 141 / 0.16);
+  --warn-ink: #fbd38d;
+  --info-soft: rgb(144 205 244 / 0.16);
+  --info-ink: #90cdf4;
+  --violet-soft: rgb(214 188 250 / 0.16);
+  --violet-ink: #d6bcfa;
+
+  --float: rgb(255 255 255 / 0.94);
+  --float-hover: rgb(255 255 255 / 0.86);
+  --float-ink: #1b254b;
+
+  --shadow-card: none;
+  --shadow-control: 0 16px 36px rgb(17 28 68 / 0.32);
+  --shadow-float: 14px 17px 40px 4px rgb(112 144 176 / 0.06);
+  --shadow-brand: none;
+  --veil: rgb(4 8 24 / 0.6);
+  --chart: rgb(255 255 255 / 0.96);
+  --bar: rgb(11 20 55 / 0.72);
+  --bar-line: rgb(255 255 255 / 0.08);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-subtle: var(--subtle);
+  --color-subtle-hover: var(--subtle-hover);
+  --color-line: var(--line);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-text: var(--text);
+  --color-soft: var(--soft);
+  --color-mute: var(--mute);
+  --color-nav: var(--nav);
+  --color-nav-active: var(--nav-active);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-ink: var(--info-ink);
+  --color-violet-soft: var(--violet-soft);
+  --color-violet-ink: var(--violet-ink);
+  --color-float: var(--float);
+  --color-float-hover: var(--float-hover);
+  --color-float-ink: var(--float-ink);
+  --color-veil: var(--veil);
+  --color-chart: var(--chart);
+  --color-bar: var(--bar);
+  --color-bar-line: var(--bar-line);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-control: var(--shadow-control);
+  --shadow-float: var(--shadow-float);
+  --shadow-brand: var(--shadow-brand);
+
+  /* --font-panel is Google Sans, loaded in layout.tsx. */
+  --font-sans: var(--font-panel), ui-sans-serif, system-ui, sans-serif;
+
+  /* The panel's own steps between Tailwind's: tablets, and the fixed sidebar. */
+  --breakpoint-xl: 75rem;
+}
+
+@layer base {
+  html {
+    background: var(--page);
+    color: var(--text);
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  /* An open dialog owns the scroll wheel. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    letter-spacing: -0.5px;
+    overflow-x: hidden;
+  }
+
+  /* Controls keep their natural spacing; only running text is tightened. */
+  button,
+  input,
+  select,
+  textarea {
+    letter-spacing: normal;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  button,
+  [role="button"],
+  summary,
+  select,
+  label:has(input[type="checkbox"], input[type="radio"]) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  option {
+    color: #000;
+  }
+
+  dialog {
+    color: inherit;
+  }
+
+  dialog::backdrop {
+    background: var(--veil);
+    backdrop-filter: blur(10px);
+  }
+}
+
+/* A white sheet with a soft shadow: the unit every page is built from. */
+@utility card {
+  border-radius: 1.25rem;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Text fields, selects and textareas inside forms. */
+@utility control {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background-color: transparent;
+  padding: 0.6875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &::placeholder {
+    color: var(--mute);
+    font-weight: 400;
+  }
+  &:hover {
+    border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1px var(--brand);
+  }
+  &[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
+  /* Selects get a chevron of their own: the native one hugs the border. */
+  &:is(select) {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23a3aed0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    background-size: 1rem;
+    text-overflow: ellipsis;
+  }
+}
+
+/* The search boxes and selects of a page's filter bar: taller, borderless, lifted. */
+@utility filter {
+  width: 100%;
+  height: 3.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid transparent;
+  background-color: var(--card);
+  box-shadow: var(--shadow-control);
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &::placeholder {
+    color: var(--mute);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow:
+      0 0 0 1px var(--brand),
+      var(--shadow-control);
+  }
+
+  &:is(select) {
+    appearance: none;
+    padding-right: 2.75rem;
+    font-weight: 600;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238f9bba' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Controls that sit straight on the page, above the cards: range buttons, dates. */
+@utility float {
+  height: 2.625rem;
+  border-radius: 0.875rem;
+  border: 1px solid transparent;
+  background-color: var(--float);
+  color: var(--float-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* Column headings of a table: small capitals, widely set. */
+@utility th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mute);
+}
+
+@utility td {
+  border-top: 1px solid var(--rule);
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* A grey block that stands in for content while it loads. */
+@utility skeleton {
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    90deg,
+    var(--subtle-hover) 25%,
+    color-mix(in srgb, var(--subtle-hover) 45%, var(--card)) 50%,
+    var(--subtle-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

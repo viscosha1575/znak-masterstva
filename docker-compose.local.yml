@@ -1,0 +1,71 @@
+# The two apps of the award site on your own machine:
+#
+#   frontend — the public site           http://localhost:3000
+#   admin    — the admin panel           http://localhost:3001
+#
+#   docker compose -f docker-compose.local.yml up -d --build
+#
+# The same images as in production (docker-compose.yml), without Traefik: no
+# domain, no certificates, the apps are published straight on localhost.
+#
+# The site keeps no data: applications, photos and the visit statistics live
+# in the admin service, in the admin-data volume, and the site reaches them
+# over the internal network (API_URL below).
+#
+# If ports 3000 and 3001 are taken, set FRONTEND_PORT / ADMIN_PORT in the .env
+# file next to this one. The same file holds the admin's settings — see
+# admin/README.md.
+
+name: avito-uslugi-local
+
+x-healthcheck: &healthcheck
+  test:
+    - CMD
+    - node
+    - -e
+    - 'fetch("http://127.0.0.1:3000/").then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))'
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 15s
+
+services:
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - admin
+    environment:
+      API_URL: http://admin:3000
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      # Optimised images are cached here; the cache survives rebuilds.
+      - frontend-cache:/app/.next/cache
+    healthcheck: *healthcheck
+
+  admin:
+    build: ./admin
+    restart: unless-stopped
+    environment:
+      # The first administrator, created while the panel has no accounts at all.
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Letters to applicants; without these the panel sends none.
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
+      SITE_URL: ${SITE_URL:-}
+      # Days the visit log is kept event by event; the totals stay for good.
+      ANALYTICS_KEEP_DAYS: ${ANALYTICS_KEEP_DAYS:-180}
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-3001}:3000"
+    volumes:
+      # The databases and the uploaded photos. Removing this volume removes
+      # every application and the site's statistics.
+      - admin-data:/data
+    healthcheck: *healthcheck
+
+volumes:
+  frontend-cache:
+  admin-data:

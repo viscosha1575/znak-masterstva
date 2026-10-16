@@ -1,0 +1,145 @@
+# Production: the two apps of the award site behind Traefik.
+#
+# Traefik holds ports 80 and 443, obtains the certificates from Let's Encrypt
+# and sends each domain to its own app:
+#
+#   https://DOMAIN          →  frontend, the public site
+#   https://admin.DOMAIN    →  admin, the admin panel
+#
+# After a move to a new domain the former one can send visitors on to the
+# site: docker-compose.moved.yml.
+#
+# Nothing else is published: the apps are reachable only through Traefik, and
+# the site reaches the panel's API over the internal network (API_URL below).
+#
+# Settings come from the .env file next to this one — see .env.example.
+# deploy/deploy.sh uploads this folder to the server and starts everything.
+# To run the apps on your own machine use docker-compose.local.yml instead:
+# it needs neither a domain nor certificates.
+
+name: avito-uslugi
+
+# The apps answer "healthy" a few seconds after they start, and Traefik sends
+# visitors only to healthy containers — so the first checks come quickly.
+x-healthcheck: &healthcheck
+  test:
+    - CMD
+    - node
+    - -e
+    - 'fetch("http://127.0.0.1:3000/").then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))'
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 30s
+  start_interval: 2s
+
+# Container logs are kept by Docker; without a ceiling they grow for ever.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+services:
+  traefik:
+    image: traefik:v3.7
+    restart: unless-stopped
+    command:
+      # Routes are read from the labels of the containers below; a container
+      # without traefik.enable=true is not exposed.
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      # The form takes photos of up to 30 MB, and over a slow mobile connection
+      # one takes minutes. By default a request is cut off after one.
+      - --entrypoints.websecure.transport.respondingtimeouts.readtimeout=600s
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?Set ACME_EMAIL in .env}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --log.level=INFO
+      - --accesslog=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # The certificates. Losing this volume means asking for them again.
+      - traefik-letsencrypt:/letsencrypt
+    networks:
+      - proxy
+    logging: *logging
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Canonical links, robots.txt, the sitemap and link previews name it.
+        SITE_URL: https://${DOMAIN:?Set DOMAIN in .env}
+    restart: unless-stopped
+    depends_on:
+      - admin
+    environment:
+      API_URL: http://admin:3000
+    volumes:
+      # Optimised images are cached here; the cache survives rebuilds.
+      - frontend-cache:/app/.next/cache
+    healthcheck: *healthcheck
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.znak-site.rule=Host(`${DOMAIN:?Set DOMAIN in .env}`)
+      - traefik.http.routers.znak-site.entrypoints=websecure
+      - traefik.http.routers.znak-site.tls.certresolver=le
+      - traefik.http.services.znak-site.loadbalancer.server.port=3000
+    networks:
+      - default
+      - proxy
+    logging: *logging
+
+  admin:
+    build: ./admin
+    restart: unless-stopped
+    environment:
+      # The first administrator, created while the panel has no accounts at all.
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Letters to applicants; without the first two the panel sends none.
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
+      # The public site: letters link to the applicant's account there.
+      SITE_URL: ${SITE_URL:-https://${DOMAIN}}
+      # Days the visit log is kept event by event; the totals stay for good.
+      ANALYTICS_KEEP_DAYS: ${ANALYTICS_KEEP_DAYS:-180}
+    volumes:
+      # The databases and the uploaded photos. Removing this volume removes
+      # every application and the site's statistics.
+      - admin-data:/data
+    healthcheck: *healthcheck
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.znak-admin.rule=Host(`${ADMIN_DOMAIN:-admin.${DOMAIN}}`)
+      - traefik.http.routers.znak-admin.entrypoints=websecure
+      - traefik.http.routers.znak-admin.tls.certresolver=le
+      - traefik.http.services.znak-admin.loadbalancer.server.port=3000
+    networks:
+      - default
+      - proxy
+    logging: *logging
+
+networks:
+  # Traefik talks to the apps over this network. It has a fixed name so that
+  # another project on the same server can put its containers behind the same
+  # Traefik by joining it.
+  proxy:
+    name: proxy
+
+volumes:
+  traefik-letsencrypt:
+  frontend-cache:
+  admin-data:

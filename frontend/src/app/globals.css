@@ -1,0 +1,982 @@
+@import "tailwindcss";
+
+/*
+ * Fluid unit. The mockups exist at two widths only — 360 (mobile) and 1920
+ * (desktop) — so every size is expressed in "design pixels" and scaled with
+ * the width of the frame the mockup is laid out in (`--frame`): 1 unit = 1px
+ * of the 360 mockup below `md`, 1px of the 1920 mockup above it. `--vw` is
+ * the scrollbar-free viewport width, set by the inline script in layout.tsx.
+ *
+ * On a phone the frame is the screen. On desktop it is a little narrower —
+ * `--zoom` of the screen, centred — so that the page does not fill the whole
+ * of a large screen and press on the reader; a narrow desktop window (up to
+ * 1024px) keeps the full width, or its text would get too small. Above 1920
+ * the frame stops growing. Backgrounds that run to the edges of the screen
+ * reach past the frame by `--bleed` on either side.
+ */
+:root {
+  --frame: var(--vw, 100vw);
+  --bleed: 0px;
+  --u: calc(var(--frame) / 360);
+
+  --r-card: calc(var(--u) * 24);
+  --r-plate: calc(var(--u) * 16);
+  --r-button: calc(var(--u) * 10);
+  /* How far the shading of a glass pane reaches in from its edge. */
+  --r-depth: calc(var(--u) * 14);
+  --shade-dark: rgb(2 0 13 / 0.47);
+  --shade-light: rgb(255 255 255 / 0.025);
+  --header-h: calc(var(--u) * 56);
+  --footer-h: calc(var(--u) * 91);
+}
+
+@media (width >= 48rem) {
+  :root {
+    --zoom: 0.85;
+    --frame: min(
+      var(--vw, 100vw),
+      max(1024px, calc(var(--vw, 100vw) * var(--zoom))),
+      calc(1920px * var(--zoom))
+    );
+    --bleed: calc((var(--vw, 100vw) - var(--frame)) / 2);
+    --u: calc(var(--frame) / 1920);
+
+    --r-card: calc(var(--u) * 40);
+    --r-plate: calc(var(--u) * 32);
+    --r-button: calc(var(--u) * 20);
+    --r-depth: calc(var(--u) * 46);
+    --header-h: calc(var(--u) * 102);
+    --footer-h: calc(var(--u) * 199);
+  }
+}
+
+/*
+ * A page set smaller than the rest on desktop (`md:compact`): the application
+ * form, whose fields at the size of the landing's copy were too big to look
+ * over and fill in. It scales everything inside — sizes, type, spacing — by
+ * redefining the unit: three quarters of the page's own, but never below
+ * 0.42px, where the type of a narrow window would get too small to read.
+ */
+@utility compact {
+  --u: min(
+    calc(var(--frame) / 1920),
+    max(calc(var(--frame) / 1920 * 0.75), 0.42px)
+  );
+  --spacing: var(--u);
+  --radius-card: calc(var(--u) * 40);
+  --radius-button: calc(var(--u) * 20);
+}
+
+@theme {
+  /* Spacing utilities count in design pixels: `w-830` is 830px of the mockup. */
+  --spacing: var(--u);
+
+  --color-ink: #15071e;
+  --color-mute: #b8b7b7;
+  --color-violet: #6220f3;
+  --color-violet-deep: #4d11a7;
+  --color-lilac: #c2a0fa;
+  --color-sky: #00aaff;
+  --color-grape: #3d0d85;
+  --color-night: #040410;
+  --color-field: #f7f7f7;
+  --color-danger: #ff4053;
+
+  /* --font-brand is CoFo Avito Display, loaded in layout.tsx. */
+  --font-sans: var(--font-brand), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: var(--r-card);
+  --radius-plate: var(--r-plate);
+  --radius-button: var(--r-button);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color: #fff;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    /*
+     * No scroll anchoring. On a reload the browser puts the page back by an
+     * anchor element, and measures it with its transform: an entrance that is
+     * still playing — content rising into place — reads as the element having
+     * moved, and the page lands tens of pixels lower than it was left. The
+     * layout never shifts on its own here, so the plain scroll offset is exact.
+     */
+    overflow-anchor: none;
+    /*
+     * No elastic overscroll at either end of the page. On a phone it pulled
+     * the white footer up off the bottom of the screen and showed the dark
+     * page background under it (and the same above the header). Vertical
+     * only: sideways it would also take the swipe back through history.
+     */
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    overflow-x: clip;
+    /* Repeated for WebKit versions that read the page's value from body. */
+    overscroll-behavior-y: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lilac);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--color-violet);
+    color: #fff;
+  }
+
+  img {
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+}
+
+/* ---------- Typography (mobile → desktop, from the Figma text styles) ---------- */
+
+/*
+ * Line heights are whole design pixels, not ratios, wherever the ratio gives a
+ * fraction: Figma lays a 16px line with 120% leading out 19px tall, not 19.2,
+ * and over a long text the fifth of a pixel adds up to a visible drift from
+ * the mockup.
+ */
+
+/*
+ * On a phone Figma draws most of these headings half a pixel lower than a
+ * browser lays the same box out, which lands a whole pixel apart; they carry
+ * `max-md:pt-0.5 max-md:-mb-0.5` to sit where the mockup has them.
+ */
+@utility t-h2 {
+  font-weight: 500;
+  font-size: calc(var(--u) * 40);
+  line-height: calc(var(--u) * 36);
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 122);
+    line-height: calc(var(--u) * 109);
+  }
+}
+
+@utility t-h3 {
+  font-weight: 500;
+  font-size: calc(var(--u) * 26);
+  line-height: calc(var(--u) * 25);
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 62);
+    line-height: calc(var(--u) * 59);
+  }
+}
+
+@utility t-lead {
+  font-weight: 400;
+  font-size: calc(var(--u) * 16);
+  line-height: calc(var(--u) * 19);
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 60);
+    line-height: 0.95;
+  }
+}
+
+@utility t-body {
+  font-weight: 400;
+  font-size: calc(var(--u) * 16);
+  line-height: calc(var(--u) * 19);
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 35);
+    line-height: 1.2;
+  }
+}
+
+@utility t-body-sm {
+  font-weight: 400;
+  font-size: calc(var(--u) * 16);
+  line-height: calc(var(--u) * 19);
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 30);
+    line-height: 1.2;
+  }
+}
+
+@utility t-input {
+  font-weight: 400;
+  font-size: calc(var(--u) * 14);
+  line-height: calc(var(--u) * 17);
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 35);
+    line-height: 1.2;
+  }
+}
+
+@utility t-small {
+  font-weight: 400;
+  font-size: calc(var(--u) * 10);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 25);
+  }
+}
+
+@utility t-note {
+  font-weight: 700;
+  font-size: calc(var(--u) * 13);
+  line-height: 1;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 30);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility t-date {
+  font-weight: 700;
+  font-size: calc(var(--u) * 13);
+  line-height: 1;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 25);
+  }
+}
+
+@utility t-q {
+  font-weight: 500;
+  font-size: calc(var(--u) * 16);
+  line-height: calc(var(--u) * 18);
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 45);
+    line-height: calc(var(--u) * 50);
+  }
+}
+
+@utility t-btn {
+  font-weight: 500;
+  font-size: calc(var(--u) * 16);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 35);
+  }
+}
+
+@utility t-foot {
+  font-weight: 400;
+  font-size: calc(var(--u) * 10);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 20);
+    line-height: normal;
+    letter-spacing: normal;
+  }
+}
+
+/* The big figures on the rating criteria. */
+@utility t-figure {
+  font-family: var(--font-figures), var(--font-sans);
+  font-weight: 300;
+  font-size: calc(var(--u) * 90);
+  line-height: 1;
+  @media (width >= 48rem) {
+    font-size: calc(var(--u) * 240);
+  }
+}
+
+/*
+ * Alternate letterforms. The mockups set single letters of a headline in the
+ * typeface's stylistic sets — `lines()` marks them up.
+ */
+@utility alt-6 {
+  font-feature-settings: "ss06", "ss07";
+}
+
+@utility alt-7 {
+  font-feature-settings: "ss07";
+}
+
+/*
+ * The ribbed disc fades out towards one side, as the mockup's mask makes it:
+ * a gradient across the disc's own square, from 10.6% to full. The two stops
+ * are the mask's, which is 97.92% of the disc across; an instance with another
+ * mask sets --fade-from / --fade-to.
+ */
+@utility disc-fade {
+  mask-image: linear-gradient(
+    117.04deg,
+    rgb(0 0 0 / 0.106) var(--fade-from, 28.29%),
+    #000 var(--fade-to, 64.54%)
+  );
+}
+
+/* ---------- Glass surfaces (CSS stand-in for Figma's Glass effect) ---------- */
+
+/*
+ * --glass-blur is the frost of the mockup's Glass effect times 0.415: Figma
+ * draws a blur of radius r as a Gaussian of sigma 0.415 r (measured against
+ * its renders), and CSS blur() takes the sigma. Frost 4 on a phone is 1.66;
+ * on desktop 14 is 5.8, 28 is 11.6 and 9.16 is 3.8.
+ */
+
+/*
+ * Frosted backdrop on its own, for glass panels nested inside a glass card.
+ *
+ * Write `backdrop-filter` unprefixed only, here and below: the build adds the
+ * -webkit- form for Safari itself, and given both by hand it keeps just the
+ * prefixed one — which Chrome ignores, silently removing the blur.
+ */
+@utility frost {
+  backdrop-filter: blur(calc(var(--u) * var(--glass-blur, 10)));
+}
+
+/*
+ * Glass has thickness too: in the mockups a pane is a shade darker just
+ * inside the two edges that catch the light and a shade lighter inside the
+ * other two, fading out over --pane-depth. Four strips, one along each side;
+ * where two meet in a corner they add up or cancel, as on a bevel.
+ */
+@utility glass {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(calc(var(--u) * var(--glass-blur, 10)));
+  background-image:
+    linear-gradient(
+      to right,
+      var(--shade-left, var(--shade-dark)),
+      transparent
+    ),
+    linear-gradient(
+      to bottom,
+      var(--shade-top, var(--shade-dark)),
+      transparent
+    ),
+    linear-gradient(
+      to left,
+      var(--shade-right, var(--shade-light)),
+      transparent
+    ),
+    linear-gradient(
+      to top,
+      var(--shade-bottom, var(--shade-light)),
+      transparent
+    );
+  background-position: left, top, right, bottom;
+  background-size:
+    var(--pane-depth, var(--r-depth)) 100%,
+    100% var(--pane-depth, var(--r-depth)),
+    var(--pane-depth, var(--r-depth)) 100%,
+    100% var(--pane-depth, var(--r-depth));
+  background-repeat: no-repeat;
+}
+
+/*
+ * The light on the edge of a pane. Figma's Glass effect draws it as a white
+ * hairline whose strength follows the direction the edge faces, and the
+ * numbers below are read off the mockups' renders: lit from the top left, a
+ * pane has its top and left edges at 27%, its right and bottom ones at 18%,
+ * a little more in the corner facing the light and the one opposite it, and
+ * nothing in the other two. One strength per side and per corner, then — a
+ * strip for each side and a quarter turn of a conic gradient for each corner
+ * — rather than one gradient across the pane, which would tie the strength
+ * to the pane's proportions.
+ *
+ * --pane-r is the pane's corner radius; a pane that is not `rounded-card`
+ * has to name its own. The line lies under everything in the pane, as in the
+ * mockups, where the lights and pictures of a card cover it.
+ */
+:is(.glass, .glass-head)::after,
+.glass-mirrored::before {
+  --rr: var(--pane-r, var(--radius-card));
+  --k: 1;
+  --t: rgb(255 255 255 / calc(var(--rim-top, 0.27) * var(--k)));
+  --r: rgb(255 255 255 / calc(var(--rim-right, 0.18) * var(--k)));
+  --b: rgb(255 255 255 / calc(var(--rim-bottom, 0.18) * var(--k)));
+  --l: rgb(255 255 255 / calc(var(--rim-left, 0.27) * var(--k)));
+  --tl: rgb(255 255 255 / calc(var(--rim-tl, 0.59) * var(--k)));
+  --tr: rgb(255 255 255 / calc(var(--rim-tr, 0) * var(--k)));
+  --br: rgb(255 255 255 / calc(var(--rim-br, 0.4) * var(--k)));
+  --bl: rgb(255 255 255 / calc(var(--rim-bl, 0) * var(--k)));
+  --rim-paint:
+    conic-gradient(
+        from 270deg at 100% 100%,
+        var(--l),
+        var(--tl) 14deg 76deg,
+        var(--t) 90deg
+      )
+      0 0 / var(--rr) var(--rr),
+    conic-gradient(
+        from 0deg at 0 100%,
+        var(--t),
+        var(--tr) 14deg 76deg,
+        var(--r) 90deg
+      )
+      100% 0 / var(--rr) var(--rr),
+    conic-gradient(
+        from 90deg at 0 0,
+        var(--r),
+        var(--br) 14deg 76deg,
+        var(--b) 90deg
+      )
+      100% 100% / var(--rr) var(--rr),
+    conic-gradient(
+        from 180deg at 100% 0,
+        var(--b),
+        var(--bl) 14deg 76deg,
+        var(--l) 90deg
+      )
+      0 100% / var(--rr) var(--rr),
+    linear-gradient(var(--t) 0 0) var(--rr) 0 / calc(100% - 2 * var(--rr))
+      var(--rr),
+    linear-gradient(var(--r) 0 0) 100% var(--rr) / var(--rr)
+      calc(100% - 2 * var(--rr)),
+    linear-gradient(var(--b) 0 0) var(--rr) 100% / calc(100% - 2 * var(--rr))
+      var(--rr),
+    linear-gradient(var(--l) 0 0) 0 var(--rr) / var(--rr)
+      calc(100% - 2 * var(--rr));
+
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--rim-paint);
+  background-repeat: no-repeat;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/*
+ * A pane the mockup has mirrored — the nominations panel and the fields of
+ * the sign-in screen — is lit from the bottom left instead. On desktop these
+ * panes are also deeper glass: the line is stronger and has a fainter second
+ * one just inside it.
+ */
+@utility glass-mirrored {
+  --shade-top: var(--shade-light);
+  --shade-bottom: var(--shade-dark);
+  --rim-top: 0.19;
+  --rim-right: 0.18;
+  --rim-bottom: 0.27;
+  --rim-left: 0.27;
+  --rim-tl: 0;
+  --rim-tr: 0.4;
+  --rim-br: 0;
+  --rim-bl: 0.59;
+
+  @media (width >= 48rem) {
+    --pane-depth: calc(var(--u) * 30);
+    --rim-top: 0.28;
+    --rim-right: 0.28;
+    --rim-bottom: 0.44;
+    --rim-left: 0.44;
+    --rim-tr: 0.64;
+    --rim-bl: 1;
+  }
+}
+.glass-mirrored::before {
+  --rr: calc(var(--pane-r, var(--radius-card)) - 1px);
+  --k: 0.42;
+  inset: 1px;
+  border-radius: var(--rr);
+  display: none;
+
+  @media (width >= 48rem) {
+    display: block;
+  }
+}
+
+/*
+ * The bar that heads a glass panel is a pane of its own in the mockups. The
+ * panel's edge already runs along its top and sides, so the bar adds only
+ * its foot: the lower corners and the line between them.
+ */
+@utility glass-head {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(
+    to top,
+    var(--shade-bottom, var(--shade-light)),
+    transparent
+  );
+  background-position: bottom;
+  background-size: 100% var(--pane-depth, var(--r-depth));
+  background-repeat: no-repeat;
+}
+.glass-head::after,
+.glass-head.glass-mirrored::before {
+  mask:
+    linear-gradient(#000 0 0) 0 100% / 100% var(--pane-r, var(--radius-card))
+      no-repeat intersect,
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/*
+ * Where <GlassFilter> has switched it on (desktop Chromium), the backdrop is
+ * also refracted — bent inwards along the edges — and then frosted.
+ * `data-lite` is the safety valve for slow devices, see <FrameWatch>.
+ */
+html[data-refract]:not([data-lite]) :is(.glass, .frost) {
+  backdrop-filter: url(#glass-refract)
+    blur(calc(var(--u) * var(--glass-blur, 10)));
+}
+
+/*
+ * On a weak device (`data-lite`: the boot script in app/layout.tsx, or
+ * <FrameWatch> once it has seen frames drop) glass is clear. Blurring what
+ * is behind every card is the single most expensive thing on these pages for
+ * a slow graphics chip, and on a phone the frost is too fine to miss.
+ */
+html[data-lite] :is(.glass, .frost),
+html[data-lite] [data-arc-frost] {
+  backdrop-filter: none;
+}
+
+/*
+ * The highlight a card shows under the cursor: a soft spot of light that
+ * <Tilt> slides around inside the card. It is moved, never repainted.
+ */
+.tilt-light {
+  position: absolute;
+  top: calc(var(--u) * -520);
+  left: calc(var(--u) * -520);
+  z-index: 4;
+  width: calc(var(--u) * 1040);
+  height: calc(var(--u) * 1040);
+  background: radial-gradient(
+    closest-side,
+    rgb(194 160 250 / 0.16),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out-quart);
+  pointer-events: none;
+}
+
+/* ---------- Motion ---------- */
+
+/*
+ * Elements that animate in are hidden up front so there is no flash between
+ * first paint and hydration. Only when scripting is on and motion is welcome.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  /*
+   * <Reveal>: content waits below its place, transparent, and settles when a
+   * script marks it as seen. `translate`, not `transform`, so it adds up with
+   * whatever else turns or leans the element. Once the move is over
+   * (`data-seen="done"`) the transition is dropped, and the element's own
+   * transitions apply again.
+   */
+  [data-reveal]:not([data-seen]),
+  [data-reveal-item]:not([data-seen]) {
+    opacity: 0;
+    translate: 0 calc(var(--u) * var(--reveal-y, 56));
+  }
+  [data-reveal]:not([data-seen="done"]),
+  [data-reveal-item]:not([data-seen="done"]) {
+    transition:
+      opacity 1.2s var(--ease-out-expo),
+      translate 1.2s var(--ease-out-expo),
+      transform 0.9s var(--ease-out-cubic);
+    transition-delay: calc(
+      var(--reveal-delay, 0s) + var(--reveal-i, 0) * var(--reveal-stagger, 0.1s)
+    );
+  }
+}
+
+/*
+ * An arc (<Arc>): a band along a circle, with a dot on its head.
+ *
+ * Lengths are in units of the artwork, which is 95.5771 wide (`--a`). The
+ * circle has its centre at (-17.772, 35.27) and a radius of 90.139; the band
+ * runs from 59.57deg at its tail to -18.53deg at its head, and its round
+ * caps add 4.2deg at each end.
+ *
+ * `.arc-clip` is a half-plane through that centre — everything clockwise of
+ * a radius — with a round bump where that radius crosses the band, so the
+ * band it uncovers ends in the same round cap all the way along. `.arc-hold`
+ * undoes its turn: the artwork inside stays where it is while the edge of the
+ * clip sweeps over it. `.arc-orbit` turns the dot about the same centre, on
+ * the tip of the band.
+ */
+[data-arc] {
+  --a: calc(100cqw / 95.5771);
+}
+.arc-clip {
+  position: absolute;
+  top: calc(var(--a) * 35.27 - 0.61cqh);
+  left: calc(var(--a) * -127.772);
+  width: calc(var(--a) * 220);
+  height: calc(var(--a) * 110);
+  /* The box, and half a circle of the band's width on its top edge, 90.139 from the centre. */
+  clip-path: polygon(
+    0 0,
+    calc(var(--a) * 193.139) 0,
+    calc(var(--a) * 193.378) calc(var(--a) * -1.812),
+    calc(var(--a) * 194.077) calc(var(--a) * -3.5),
+    calc(var(--a) * 195.189) calc(var(--a) * -4.95),
+    calc(var(--a) * 196.639) calc(var(--a) * -6.062),
+    calc(var(--a) * 198.327) calc(var(--a) * -6.761),
+    calc(var(--a) * 200.139) calc(var(--a) * -7),
+    calc(var(--a) * 201.951) calc(var(--a) * -6.761),
+    calc(var(--a) * 203.639) calc(var(--a) * -6.062),
+    calc(var(--a) * 205.089) calc(var(--a) * -4.95),
+    calc(var(--a) * 206.201) calc(var(--a) * -3.5),
+    calc(var(--a) * 206.9) calc(var(--a) * -1.812),
+    calc(var(--a) * 207.139) 0,
+    calc(var(--a) * 220) 0,
+    calc(var(--a) * 220) calc(var(--a) * 110),
+    0 calc(var(--a) * 110)
+  );
+  transform-origin: 50% 0;
+  rotate: -18.53deg;
+}
+.arc-hold {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 0;
+  rotate: 18.53deg;
+}
+/* The artwork is a little taller than the arc's own box, and starts a little above it. */
+.arc-canvas {
+  position: absolute;
+  top: calc(var(--a) * -35.27);
+  left: calc(var(--a) * 127.772);
+  width: calc(var(--a) * 95.5771);
+  height: calc(var(--a) * 119.575);
+}
+.arc-orbit {
+  position: absolute;
+  top: calc(var(--a) * 35.27 - 0.61cqh);
+  left: calc(var(--a) * -17.772);
+  width: 0;
+  height: 0;
+}
+.arc-dot {
+  position: absolute;
+  top: calc(var(--a) * -32.7911);
+  left: calc(var(--a) * 81.3392);
+  width: calc(var(--a) * 8.28012);
+  height: calc(var(--a) * 8.28012);
+  border-radius: 50%;
+  background: #fff;
+}
+/*
+ * It is drawn when it comes into view (`data-seen`), from the tail to the
+ * head: until then the clip stands at the tail and the dot with it, and both
+ * are transparent.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-arc] :is(.arc-clip, .arc-hold, .arc-orbit) {
+    transition:
+      rotate 1.6s var(--ease-out-cubic) 0.35s,
+      opacity 0.25s linear 0.35s;
+  }
+  [data-arc]:not([data-seen]) .arc-clip {
+    rotate: 59.57deg;
+    opacity: 0;
+  }
+  [data-arc]:not([data-seen]) .arc-hold {
+    rotate: -59.57deg;
+  }
+  [data-arc]:not([data-seen]) .arc-orbit {
+    rotate: 78.1deg;
+    opacity: 0;
+  }
+}
+
+/*
+ * First-screen entrance. Written in CSS on purpose: it starts with the very
+ * first paint, so on a slow connection the headline and the hero image are
+ * already on screen while the JavaScript is still downloading. (Everything
+ * further down the page waits to be scrolled to, see <Reveal> and <Seen>.)
+ *
+ * `--i` staggers siblings.
+ */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--u) * 40), 0);
+  }
+}
+
+@keyframes hero-bloom {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes line-up {
+  from {
+    transform: translate3d(0, 115%, 0);
+  }
+}
+
+/* A headline line and the mask it slides out from; the padding keeps ascenders and descenders unclipped. */
+.line-mask {
+  display: block;
+  overflow: clip;
+  padding-block: 0.14em;
+  margin-block: -0.14em;
+
+  & > span {
+    display: block;
+  }
+}
+
+/*
+ * The light fills backwards only: it ends where the element stands anyway,
+ * and an animation that goes on holding its last frame keeps its element —
+ * here the size of the whole screen — as a layer of its own for good.
+ *
+ * The copy does hold its last frame. Its layers are small, and text that
+ * comes out of a finished animation is painted afresh: the browser would
+ * then count the first screen as shown only when the entrance is over, two
+ * seconds late (largest contentful paint).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-hero-light] {
+    animation: hero-bloom 2.6s var(--ease-out-expo) calc(var(--i, 0) * 0.2s)
+      backwards;
+  }
+  [data-hero-copy] {
+    animation: hero-rise 1.3s var(--ease-out-expo)
+      calc(0.6s + var(--i, 0) * 0.12s) both;
+  }
+  .line-mask > span {
+    animation: line-up 1.3s var(--ease-out-expo) calc(0.3s + var(--i, 0) * 0.1s)
+      both;
+  }
+}
+
+/*
+ * A headline further down the page (<LineReveal when="seen">) waits for
+ * <Seen> to mark it: until then its lines are held below their masks, and
+ * then released by a transition instead of the animation above.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-await] .line-mask > span {
+    animation: none;
+    transition: translate 1.3s var(--ease-out-expo) calc(var(--i, 0) * 0.1s);
+  }
+  [data-await]:not([data-seen]) .line-mask > span {
+    translate: 0 115%;
+  }
+}
+
+/*
+ * Nothing on the pages moves by itself: the lights, the streak and the
+ * pictures stand still, as in the mockups. Each idle loop — a light that
+ * pulsed in a card, a glow drifting behind one — had the browser redraw the
+ * page and blur the glass over it anew sixty times a second, with nobody
+ * doing anything. Motion is kept to entrances and to what follows the cursor.
+ *
+ * The one loop left is the light in the open menu, over a solid background:
+ * it runs only while the menu is open.
+ */
+@keyframes ambient-sway {
+  from {
+    transform: translate3d(-2.5%, -1.5%, 0) rotate(-2deg) scale(1);
+    opacity: var(--amb-min, 0.82);
+  }
+  to {
+    transform: translate3d(2.5%, 2%, 0) rotate(2deg) scale(1.07);
+    opacity: 1;
+  }
+}
+
+@utility ambient-sway {
+  animation: ambient-sway var(--amb-time, 16s) ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-sway {
+    animation: none;
+  }
+}
+
+/*
+ * The mask the desktop mockup puts on a streak (<Streak mask>), in design
+ * pixels of the streak's own frame: its left, top and bottom edges
+ * (--mask-l, --mask-t, --mask-b), and --mask-r, where the layout frame ends.
+ * Past that, in the margin of a screen wider than the frame, the mockup has
+ * nothing: there the top edge would cut the light in a straight line, and the
+ * light would run on to the corner of its own picture. So the mask stops at
+ * the frame and the light fades out over the next 240.
+ */
+@utility streak-mask {
+  @media (width >= 48rem) {
+    clip-path: polygon(
+      calc(var(--u) * var(--mask-l)) calc(var(--u) * var(--mask-t)),
+      calc(var(--u) * var(--mask-r)) calc(var(--u) * var(--mask-t)),
+      calc(var(--u) * var(--mask-r)) 0,
+      100% 0,
+      100% calc(var(--u) * var(--mask-b, 100000)),
+      calc(var(--u) * var(--mask-l)) calc(var(--u) * var(--mask-b, 100000))
+    );
+    mask-image: linear-gradient(
+      to right,
+      #000 calc(var(--u) * var(--mask-r)),
+      transparent calc(var(--u) * (var(--mask-r) + 240))
+    );
+  }
+}
+
+/*
+ * A picture that stands on something (<Stand>) turns in depth about the line
+ * it stands on, so that line never moves and the picture never comes off its
+ * rock. --foot raises the line above the bottom of the box.
+ */
+[data-stand] {
+  transform-origin: 50% calc(100% - var(--foot, 0px));
+}
+/* The turn towards the cursor: <Stand> sets the angle, the transition eases to it. */
+@property --turn {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+[data-stand="turn"] {
+  transition: transform 1.2s var(--ease-out-cubic);
+}
+[data-stand="turn"][data-turning] {
+  transform: perspective(calc(var(--u) * 2000)) rotateY(var(--turn));
+}
+
+/*
+ * <Tilt>: a card leans towards the cursor. The script sets the two angles;
+ * the card is a 3D layer only while it is tilted. On a weak device it stays
+ * flat — turning a card means blurring its backdrop anew every frame — and
+ * only the highlight follows the cursor.
+ */
+@property --tilt-x {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --tilt-y {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+[data-tilt] {
+  transition: transform 0.9s var(--ease-out-cubic);
+}
+html:not([data-lite]) [data-tilt][data-tilting] {
+  transform: perspective(1400px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+
+/* <Magnetic>: follows the cursor, and springs back past its place when let go. */
+[data-magnetic] {
+  transition: translate 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-magnetic]:hover {
+  transition: translate 0.6s var(--ease-out-cubic);
+}
+
+/* The page behind an open overlay does not scroll (lib/scroll.ts). */
+html[data-scroll-locked] {
+  overflow: clip;
+}
+
+/*
+ * On a touch screen the page scrolls inside #page, not as the document: a
+ * phone browser slides its address bar away while the document scrolls, and
+ * the bar is to stay (lib/scroll.ts). The document is exactly one screen tall
+ * and does not move.
+ *
+ * #page sits in a body that clips. Otherwise Chrome would take a box filling
+ * the screen for the document (its "implicit root scroller") and hide the
+ * bar again.
+ */
+@media (pointer: coarse) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #page {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* As for the document above: no spring at the ends, no scroll anchoring. */
+    overscroll-behavior-y: none;
+    overflow-anchor: none;
+  }
+
+  /* Hidden, not clip: the box keeps its position under the open menu. */
+  html[data-scroll-locked] #page {
+    overflow-y: hidden;
+  }
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ---------- View transitions ---------- */
+
+::view-transition-group(.object-morph) {
+  animation-duration: 0.7s;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+::view-transition-old(.page-out) {
+  animation: 0.25s ease-out both vt-fade reverse;
+}
+::view-transition-new(.page-in) {
+  animation:
+    0.45s ease-out 0.12s both vt-fade,
+    0.7s var(--ease-out-expo) 0.12s both vt-rise;
+}
+
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vt-rise {
+  from {
+    transform: translateY(calc(var(--u) * 40));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

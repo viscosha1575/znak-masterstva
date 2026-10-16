@@ -1,0 +1,17 @@
+# Installed and built inside the image
+node_modules
+.next
+next-env.d.ts
+*.tsbuildinfo
+
+# The local database and uploaded photos: data never goes into an image
+data
+
+# Not needed to build the app
+.git
+.env*
+.DS_Store
+Dockerfile
+.dockerignore
+README.md
+AGENTS.md

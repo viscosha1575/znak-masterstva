@@ -1,0 +1,27 @@
+# An addition to docker-compose.yml for after the site has moved to a new
+# DOMAIN: the former domain keeps answering and sends every visitor, with the
+# same path and query, to the site at the new one — so old links, bookmarks
+# and QR codes still work.
+#
+# Switched on in .env on the server:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.moved.yml
+#   OLD_DOMAIN=konkurs.example.ru
+#
+# The former name has to keep pointing at the server: its certificate is
+# renewed like the others. The redirect is permanent (301): search engines then
+# carry the old address over to the new one instead of keeping both. Browsers
+# remember it too, so the site is not meant to move back.
+
+services:
+  frontend:
+    labels:
+      - traefik.http.routers.znak-moved.rule=Host(`${OLD_DOMAIN:?Set OLD_DOMAIN in .env}`)
+      - traefik.http.routers.znak-moved.entrypoints=websecure
+      - traefik.http.routers.znak-moved.tls.certresolver=le
+      - traefik.http.routers.znak-moved.middlewares=znak-moved
+      # Never reached: the middleware answers first. A router needs a service.
+      - traefik.http.routers.znak-moved.service=znak-site
+      - traefik.http.middlewares.znak-moved.redirectregex.regex=^https://[^/]+(.*)
+      - traefik.http.middlewares.znak-moved.redirectregex.replacement=https://${DOMAIN}$${1}
+      - traefik.http.middlewares.znak-moved.redirectregex.permanent=true

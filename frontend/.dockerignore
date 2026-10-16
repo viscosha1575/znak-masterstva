@@ -1,0 +1,14 @@
+# Installed and built inside the image
+node_modules
+.next
+next-env.d.ts
+*.tsbuildinfo
+
+# Not needed to build the app
+.git
+.env*
+.DS_Store
+Dockerfile
+.dockerignore
+README.md
+AGENTS.md
